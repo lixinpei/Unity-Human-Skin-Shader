@@ -57,6 +57,7 @@
      <None Include="Assets\SkinShader\Shaders\SSSSS.shader" />
      <None Include="Assets\SkinShader\Shaders\Tess-Skin.shader" />
      <None Include="Assets\SkinShader\Shaders\Depth.shader" />
+     <None Include="Assets\SkinShader\Shaders\Tess-SSS.shader" />
  <Reference Include="Unity.PackageManagerUI.Editor">
  <HintPath>D:/Human Skin/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
  </Reference>

@@ -1,4 +1,4 @@
-﻿Shader "Tessellation/Skin" {
+﻿Shader "MStudio/Tessellation Skin" {
 	Properties {
 		_MinDist("Tess Min Distance", float) = 10
 		_MaxDist("Tess Max Distance", float) = 25
@@ -42,8 +42,6 @@
 	// ------------------------------------------------------------
 	// Surface shader code generated out of a CGPROGRAM block:
 CGINCLUDE
-// Upgrade NOTE: excluded shader from OpenGL ES 2.0 because it uses non-square matrices
-#pragma exclude_renderers gles
 
 #include "HLSLSupport.cginc"
 #include "UnityShaderVariables.cginc"
@@ -53,7 +51,7 @@ CGINCLUDE
 #include "UnityPBSLighting.cginc"
 #include "UnityMetaPass.cginc"
 #include "AutoLight.cginc"
-#pragma shader_feature USE_FILTER
+
 #pragma shader_feature USE_NORMAL
 #pragma shader_feature USE_SPECULAR
 #pragma shader_feature USE_VERTEX
@@ -309,7 +307,9 @@ inline float3 SubTransparentColor(float3 lightDir, float3 viewDir, float3 lightC
 }
 
 inline void vert(inout appdata_full v){
+
 	v.vertex.xyz += v.normal *( (tex2Dlod(_HeightMap, v.texcoord).r - 0.5) * _VertexScale +   _VertexOffset);
+
 }
 
 inline float3 UnityCalcTriEdgeTessFactors (float3 triVertexFactors)
@@ -345,20 +345,16 @@ inline float3 tessDist (float4 v0, float4 v1, float4 v2)
 
 inline UnityTessellationFactors hsconst_surf (InputPatch<InternalTessInterp_appdata_full,3> v) {
   UnityTessellationFactors o;
-  #if USE_FILTER
-  float3 tf = (tessDist(v[0].vertex, v[1].vertex, v[2].vertex) - 1);
-  o.edge[0] = tf.x * v[0].color.a + 1;
-  o.edge[1] = tf.y * v[1].color.a + 1;
-  o.edge[2] = tf.z * v[2].color.a + 1;
-  o.inside = (o.edge[0] + o.edge[1] + o.edge[2]) * 0.33333333;
-  #else
   float3 tf = (tessDist(v[0].vertex, v[1].vertex, v[2].vertex));
+  float3 objCP = mul(unity_WorldToObject, float4(_WorldSpaceCameraPos,1)).xyz;
+  float3 dir = step(0, float3(dot(normalize(objCP - v[0].vertex), v[0].normal), dot(normalize(objCP - v[1].vertex), v[1].normal), dot(normalize(objCP - v[2].vertex), v[2].normal)));
+  tf = lerp(0, tf, saturate(dir.x + dir.y + dir.z));
   o.edge[0] = tf.x;
   o.edge[1] = tf.y;
   o.edge[2] = tf.z;
   o.inside = (tf.x + tf.y + tf.z) * 0.33333333;
-  #endif
   return o;
+
 }
 
 
@@ -409,7 +405,6 @@ CGPROGRAM
 // reads from normal: no
 // 1 texcoords actually used
 //   float2 _MainTex
-#define UNITY_PASS_FORWARDBASE
 
 
 #define INTERNAL_DATA half3 internalSurfaceTtoW0; half3 internalSurfaceTtoW1; half3 internalSurfaceTtoW2;
@@ -420,21 +415,6 @@ CGPROGRAM
 #line 22 ""
 #ifdef DUMMY_PREPROCESSOR_TO_WORK_AROUND_HLSL_COMPILER_LINE_HANDLING
 #endif
-
-#ifdef UNITY_CAN_COMPILE_TESSELLATION
-
-// tessellation vertex shader
-
-
-// tessellation hull constant shader
-
-
-// tessellation hull shader
-
-
-#endif // UNITY_CAN_COMPILE_TESSELLATION
-
-
 // vertex-to-fragment interpolation data
 // no lightmaps:
 #ifndef LIGHTMAP_ON
@@ -722,8 +702,6 @@ CGPROGRAM
 // reads from normal: no
 // 1 texcoords actually used
 //   float2 _MainTex
-#define UNITY_PASS_FORWARDADD
-
 
 #define INTERNAL_DATA half3 internalSurfaceTtoW0; half3 internalSurfaceTtoW1; half3 internalSurfaceTtoW2;
 #define WorldReflectionVector(data,normal) reflect (data.worldRefl, half3(dot(data.internalSurfaceTtoW0,normal), dot(data.internalSurfaceTtoW1,normal), dot(data.internalSurfaceTtoW2,normal)))
@@ -911,10 +889,12 @@ ENDCG
 
 CGPROGRAM
 // compile directives
+
 #pragma vertex tessvert_surf_shadowCaster
 #pragma fragment frag_surf
-#pragma hull hs_surf
+#pragma hull hs_surf_shadow
 #pragma domain ds_surf
+
 #pragma target 5.0
 
 #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
@@ -935,30 +915,60 @@ CGPROGRAM
 
 struct v2f_surf {
   V2F_SHADOW_CASTER;
-
   UNITY_VERTEX_INPUT_INSTANCE_ID
   UNITY_VERTEX_OUTPUT_STEREO
 };
 
+struct InternalTessInterp_appdata_base {
+  float4 vertex : INTERNALTESSPOS;
+  float3 normal : NORMAL;
+  float4 texcoord : TEXCOORD0;
+};
+
 // vertex shader
-inline v2f_surf vert_surf (appdata_full v) {
+inline v2f_surf vert_surf (appdata_base v) {
   v2f_surf o;
   UNITY_INITIALIZE_OUTPUT(v2f_surf,o);
   TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
   return o;
 }
 
-inline InternalTessInterp_appdata_full tessvert_surf_shadowCaster (appdata_full v) {
-  InternalTessInterp_appdata_full o;
+inline UnityTessellationFactors hsconst_surf_shadow (InputPatch<InternalTessInterp_appdata_base,3> v) {
+   UnityTessellationFactors o;
+  float3 tf = (tessDist(v[0].vertex, v[1].vertex, v[2].vertex));
+  o.edge[0] = tf.x;
+  o.edge[1] = tf.y;
+  o.edge[2] = tf.z;
+  o.inside = (tf.x + tf.y + tf.z) * 0.33333333;
+  return o;
+
+}
+
+
+[UNITY_domain("tri")]
+[UNITY_partitioning("fractional_odd")]
+[UNITY_outputtopology("triangle_cw")]
+[UNITY_patchconstantfunc("hsconst_surf_shadow")]
+[UNITY_outputcontrolpoints(3)]
+inline InternalTessInterp_appdata_base hs_surf_shadow (InputPatch<InternalTessInterp_appdata_base,3> v, uint id : SV_OutputControlPointID) {
+  return v[id];
+}
+
+inline InternalTessInterp_appdata_base tessvert_surf_shadowCaster (appdata_base v) {
+  InternalTessInterp_appdata_base o;
   o.vertex = v.vertex;
   o.normal = v.normal;
   o.texcoord = v.texcoord;
   return o;
 }
 
+inline void vert_shadow(inout appdata_base v){
+	v.vertex.xyz += v.normal *( (tex2Dlod(_HeightMap, v.texcoord).r - 0.5) * _VertexScale +   _VertexOffset);
+}
+
 [UNITY_domain("tri")]
-inline v2f_surf ds_surf (UnityTessellationFactors tessFactors, const OutputPatch<InternalTessInterp_appdata_full,3> vi, float3 bary : SV_DomainLocation) {
-  appdata_full v;
+inline v2f_surf ds_surf (UnityTessellationFactors tessFactors, const OutputPatch<InternalTessInterp_appdata_base,3> vi, float3 bary : SV_DomainLocation) {
+  appdata_base v;
   v.vertex = vi[0].vertex*bary.x + vi[1].vertex*bary.y + vi[2].vertex*bary.z;
     #if USE_PHONG
   float3 pp[3];
@@ -967,15 +977,10 @@ inline v2f_surf ds_surf (UnityTessellationFactors tessFactors, const OutputPatch
   pp[2] = v.vertex.xyz - vi[2].normal * (dot(v.vertex.xyz, vi[2].normal) - dot(vi[2].vertex.xyz, vi[2].normal));
   v.vertex.xyz = _Phong * (pp[0]*bary.x + pp[1]*bary.y + pp[2]*bary.z) + (1.0f-_Phong) * v.vertex.xyz;
   #endif
-  v.tangent = 0;
   v.normal = vi[0].normal*bary.x + vi[1].normal*bary.y + vi[2].normal*bary.z;
   v.texcoord = vi[0].texcoord*bary.x + vi[1].texcoord*bary.y + vi[2].texcoord*bary.z;
-  v.texcoord1 = 0;
-  v.texcoord2 = 0;
-  v.texcoord3 = 0;
-  v.color = 0;
     #if USE_VERTEX
-  vert(v);
+  vert_shadow(v);
   #endif
   v2f_surf o = vert_surf (v);
   return o;

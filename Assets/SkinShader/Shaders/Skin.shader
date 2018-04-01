@@ -762,7 +762,7 @@ inline v2f_surf vert_surf (appdata_base v) {
 
 // fragment shader
 inline float4 frag_surf (v2f_surf IN) : SV_Target {
- 	return 1;
+ 	SHADOW_CASTER_FRAGMENT(IN)
 }
 
 #endif

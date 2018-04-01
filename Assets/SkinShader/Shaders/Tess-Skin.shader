@@ -902,7 +902,6 @@ CGPROGRAM
 
 // -------- variant for: <when no other keywords are defined>
 #if !defined(INSTANCING_ON)
-#define UNITY_PASS_SHADOWCASTER
 
 #define INTERNAL_DATA
 #define WorldReflectionVector(data,normal) data.worldRefl
@@ -988,7 +987,7 @@ inline v2f_surf ds_surf (UnityTessellationFactors tessFactors, const OutputPatch
 
 // fragment shader
 inline float4 frag_surf (v2f_surf IN) : SV_Target {
- 	return 1;
+ 	SHADOW_CASTER_FRAGMENT(IN)
 }
 
 
@@ -1018,27 +1017,7 @@ CGPROGRAM
 
 // -------- variant for: <when no other keywords are defined>
 #if !defined(INSTANCING_ON)
-// Surface shader code generated based on:
-// vertex modifier: 'disp'
-// writes to per-pixel normal: YES
-// writes to emission: YES
-// writes to occlusion: YES
-// needs world space reflection vector: no
-// needs world space normal vector: no
-// needs screen space position: no
-// needs world space position: no
-// needs view direction: no
-// needs world space view direction: no
-// needs world space position for lighting: YES
-// needs world space view direction for lighting: YES
-// needs world space view direction for lightmaps: no
-// needs vertex color: no
-// needs VFACE: no
-// passes tangent-to-world matrix to pixel shader: YES
-// reads from normal: no
-// 1 texcoords actually used
-//   float2 _MainTex
-#define UNITY_PASS_META
+
 
 #define INTERNAL_DATA half3 internalSurfaceTtoW0; half3 internalSurfaceTtoW1; half3 internalSurfaceTtoW2;
 #define WorldReflectionVector(data,normal) reflect (data.worldRefl, half3(dot(data.internalSurfaceTtoW0,normal), dot(data.internalSurfaceTtoW1,normal), dot(data.internalSurfaceTtoW2,normal)))

@@ -1,9 +1,6 @@
 ﻿Shader "MStudio/Skin" {
 	Properties {
-		_MinDist("Tess Min Distance", float) = 10
-		_MaxDist("Tess Max Distance", float) = 25
-		_Tessellation("Tessellation", Range(1,63)) = 1
-		_Phong ("Phong Strengh", Range(0,1)) = 0.5
+
 		_Color ("Color", Color) = (1,1,1,1)
 		_MainTex ("Albedo (RGB)", 2D) = "white" {}
 		_BumpMap("Normal Map", 2D) = "bump" {}
@@ -108,11 +105,7 @@ CGINCLUDE
 		
         float4 _SpecularColor;
         float4 _EmissionColor;
-		float _MinDist;
-		float _MaxDist;
-		float _Tessellation;
 		float _HeightScale;
-		float _Phong;
 		float _NormalScale;
 		float _Occlusion;
 		float _VertexScale;
